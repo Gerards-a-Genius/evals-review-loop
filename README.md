@@ -53,7 +53,7 @@ That directory is the shared convention read by Claude Code, Codex CLI, Cursor, 
 |---|---|---|---|
 | Claude Code | [`adapters/claude-code/`](adapters/claude-code/) | **Enforced** | **Enforced** |
 | DeepSeek Harness | [`adapters/deepseek-harness/`](adapters/deepseek-harness/) | **Enforced** | Not enforced — injected instead |
-| Codex CLI | [`adapters/codex/`](adapters/codex/) | Not possible (no pre-tool hook) | **Enforced**, convention unverified |
+| Codex CLI | [`adapters/codex/`](adapters/codex/) | **Enforced** (shell-write classification limited) | **Enforced** |
 | Hermes | [`adapters/hermes/`](adapters/hermes/) | n/a (a conductor) | Evidence only |
 
 Each adapter README states what it enforces, what it observes, and what is still unverified. Read it

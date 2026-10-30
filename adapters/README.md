@@ -8,17 +8,22 @@ no adapter re-implements a check.
 |---|---|---|---|---|
 | **Claude Code** | [`claude-code/`](claude-code/) | **Enforced** (`PreToolUse`) | **Enforced** (`Stop`) | plugin validate + 68 assertions |
 | **DeepSeek Harness** | [`deepseek-harness/`](deepseek-harness/) | **Enforced** (`tools/pre-execute` → `deny`) | **Not enforced** — inject instead | `PreToolDecision` read from source; decision function tested |
-| **Codex CLI** | [`codex/`](codex/) | **Not possible** — no pre-tool hook | **Enforced** (`Stop`), block convention unverified | hooks schema read from a live config |
+| **Codex CLI** | [`codex/`](codex/) | **Enforced** (`PreToolUse`), shell-write classification limited | **Enforced** (`Stop`) | live `codex exec` runs: `hook: PreToolUse Blocked`, `hook: Stop Blocked` |
 | **Hermes** | [`hermes/`](hermes/) | n/a — a conductor, not an editor | **Evidence only** — annotate, never block | script tested; patch documented, not applied |
 
 Read each adapter's own README before trusting it. Every one states plainly what it enforces, what it
 merely observes, what it cannot see, and what remains unverified. That is a rule of this repo: an
 adapter that cannot block must not report success it did not enforce.
 
-**Why the columns differ.** "Can this host deny a tool call before it runs?" is the only question
-that determines whether the build gate is enforceable. Claude Code (`PreToolUse`) and the DeepSeek
-Harness (`tools/pre-execute`) can. Codex CLI cannot — it has hooks, but no pre-tool event. Hermes
-never edits, so its gate belongs on the dispatch result.
+**Why the columns differ.** "Can this host deny a tool call before it runs?" decides whether the
+build gate is enforceable. Claude Code (`PreToolUse`), Codex CLI (`PreToolUse` — same protocol) and
+the DeepSeek Harness (`tools/pre-execute`) can. Hermes never edits, so its gate belongs on the
+dispatch result.
+
+A separate limit applies everywhere: the core gates *guardrail* writes and the Write/Edit family, but
+does not infer the filesystem target of every shell command. On a host that writes files through the
+shell — Codex especially — treat the build gate as guardrail protection rather than a full write
+barrier.
 
 ## Adding a host
 

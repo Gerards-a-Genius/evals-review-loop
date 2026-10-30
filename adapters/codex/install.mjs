@@ -6,13 +6,17 @@
 // Codex CLI reads project hooks from <repo>/.codex/hooks.json, using the SAME
 // schema as Claude Code: { hooks: { <Event>: [ { matcher?, hooks: [ {type, command, …} ] } ] } }.
 //
-// What Codex gets, and why it is less than Claude Code:
-//   Stop              → the completion gate. Real enforcement of "cannot claim done".
-//   UserPromptSubmit  → injects the gate state as context, so the model states "done"
-//                       in front of the evidence. Soft: it informs, it does not block.
-//   PreToolUse        → does NOT exist in Codex. There is no way for a hook to deny a
-//                       write, so the build gate cannot be enforced here. Codex's own
-//                       sandbox/approval layer is what stops writes.
+// Codex's hook protocol is the Claude Code protocol: the PreToolUse payload carries
+// hook_event_name / tool_name / tool_input, and tool_name for a shell command is
+// literally "Bash" (captured from a live run, v0.162.1). So the shared core reads it
+// unchanged — no translator.
+//
+//   PreToolUse        → build gate (guardrail protection; plus any Write/Edit-family
+//                       tool Codex exposes). General source-write blocking through
+//                       shell is a documented core limitation, not a Codex one.
+//   Stop              → completion gate. VERIFIED: Codex prints "hook: Stop Blocked"
+//                       and the model cannot claim the feature is done.
+//   UserPromptSubmit  → injects the gate state as context every turn.
 //
 // The gate is inert until a human runs `touch .evals-loop` in the repo.
 
@@ -58,6 +62,18 @@ for (const name of ['eval-gate.mjs', 'stop-gate.sh']) {
 //    project-dir variable for hook commands, so bake the path in.
 const gate = path.join(hooksDir, 'eval-gate.mjs').replace(/\\/g, '/');
 const wanted = {
+  PreToolUse: [
+    {
+      hooks: [
+        {
+          type: 'command',
+          command: `node '${gate}' check`,
+          timeout: 15,
+          statusMessage: 'Checking evals gate…',
+        },
+      ],
+    },
+  ],
   Stop: [
     {
       hooks: [
