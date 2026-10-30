@@ -47,6 +47,13 @@
 
 set -uo pipefail
 
+# macOS /bin/bash is 3.2. Under `set -u` it treats an UNSET array as unbound, and
+# expanding an EMPTY array errors instead of expanding to nothing. So: pre-initialise
+# every array here, and always expand through the plus-guarded idiom instead of a
+# bare double-quoted star-index expansion.
+files=(); sections=(); problems=(); checklines=(); lines=()
+CMD_FAILS=(); P_RESULTS=(); P_MISSING=()
+
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 # ---------------------------------------------------------------------------
@@ -137,7 +144,7 @@ resolve_eval_files() {
   files=("$ROOT"/specs/features/*/eval.md)
   shopt -u nullglob
   if (( ${#files[@]} > 0 )); then
-    printf '%s\n' "${files[@]}"
+    printf '%s\n' ${files[@]+"${files[@]}"}
     return 0
   fi
   return 1
@@ -308,7 +315,7 @@ stop_main() {
     exit 2
   fi
 
-  for file in "${files[@]}"; do
+  for file in ${files[@]+"${files[@]}"}; do
     display="$(feature_display "$file")"
     total_files=$((total_files + 1))
 
@@ -347,11 +354,11 @@ stop_main() {
     total_checks=$((total_checks + ${#P_RESULTS[@]} + ${#P_MISSING[@]}))
 
     if (( approved_ok )); then
-      for id in "${P_MISSING[@]}"; do
+      for id in ${P_MISSING[@]+"${P_MISSING[@]}"}; do
         checklines+=("$id has no Result: line")
         any_failure=1
       done
-      for entry in "${P_RESULTS[@]}"; do
+      for entry in ${P_RESULTS[@]+"${P_RESULTS[@]}"}; do
         id="${entry%%$'\t'*}"
         val="${entry#*$'\t'}"
         case "$val" in
@@ -372,12 +379,12 @@ stop_main() {
       if (( ${#problems[@]} > 0 )); then
         needs_approval=1
         sections+=("$display's eval is not approved, so the feature isn't done:")
-        for line in "${problems[@]}"; do sections+=("- $line"); done
+        for line in ${problems[@]+"${problems[@]}"}; do sections+=("- $line"); done
         problems=()
       fi
     elif (( ${#checklines[@]} > 0 )); then
       sections+=("$display's eval is approved but not passing, so the feature isn't done:")
-      for line in "${checklines[@]}"; do sections+=("- $line"); done
+      for line in ${checklines[@]+"${checklines[@]}"}; do sections+=("- $line"); done
       checklines=()
     fi
   done
@@ -386,7 +393,7 @@ stop_main() {
   if (( ${#CMD_FAILS[@]} > 0 )); then
     any_failure=1
     sections+=("The eval commands in .evals-commands are failing:")
-    for line in "${CMD_FAILS[@]}"; do
+    for line in ${CMD_FAILS[@]+"${CMD_FAILS[@]}"}; do
       case "$line" in
         "    "*) sections+=("$line") ;;
         *) sections+=("- $line") ;;
@@ -412,7 +419,7 @@ stop_main() {
     while IFS= read -r line; do sections+=("  $line"); done < <(approval_hint 'specs/features/fr-<NN>/eval.md')
   fi
 
-  printf '%s\n' "${sections[@]}" >&2
+  printf '%s\n' ${sections[@]+"${sections[@]}"} >&2
   exit 2
 }
 
