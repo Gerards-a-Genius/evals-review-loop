@@ -42,8 +42,12 @@ Merges the hooks into that project's `.claude/settings.json` without overwriting
 ### Any agent that reads Agent Skills
 
 ```bash
-cp -R skills/evals-review-loop ~/.agents/skills/
+git clone https://github.com/Gerards-a-Genius/evals-review-loop.git
+cd evals-review-loop && ./install-skill.sh
 ```
+
+Installs to `~/.agents/skills/evals-review-loop` (override with `AGENTS_SKILLS_DIR`), verifies the
+frontmatter, and checks that `node`, `python3` and `git` are present. Re-run it after `git pull`.
 
 That directory is the shared convention read by Claude Code, Codex CLI, Cursor, Copilot, Gemini CLI and others. You get the **instructions** everywhere; enforcement needs the matching adapter.
 
