@@ -1,0 +1,14 @@
+{
+  "name": "evals-review-loop",
+  "owner": { "name": "Gerard" },
+  "metadata": {
+    "description": "An evals-and-review workflow for coding agents, as a portable Agent Skill plus host adapters."
+  },
+  "plugins": [
+    {
+      "name": "evals-review-loop",
+      "source": "./",
+      "description": "Red-first evals, a fresh-context reviewer, and a bounded fix loop with a Stop gate that refuses 'done' while a check is failing."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+*.log
+.review-loop/
+.evals-loop
+.evals-commands
+evals-approved*
+# test harness scratch
+test/harness/work/
+test/harness/*.log

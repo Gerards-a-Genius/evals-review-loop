@@ -1,0 +1,9 @@
+{
+  "name": "evals-review-loop",
+  "version": "0.1.0",
+  "description": "Makes a coding agent prove its work: red-first evals, a fresh-context reviewer, and a bounded fix loop that refuses to let the agent call a feature done while a check is failing.",
+  "author": { "name": "Gerard" },
+  "license": "MIT",
+  "homepage": "https://github.com/Gerards-a-Genius/evals-review-loop",
+  "keywords": ["evals", "code-review", "verification", "hooks", "agent-skills"]
+}

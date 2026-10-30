@@ -1,0 +1,99 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    name: Gate test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Gate assertion suite
+        run: bash test/run-tests.sh
+
+      - name: Syntax — core gate
+        run: node --check hooks/core/eval-gate.mjs
+
+      - name: Syntax — completion gate
+        run: bash -n hooks/core/stop-gate.sh
+
+      - name: Syntax — hermes adapter
+        run: bash -n adapters/hermes/evals-gate.sh
+
+      - name: Syntax — installers and host adapters
+        run: |
+          for f in adapters/claude-code/install.mjs adapters/codex/install.mjs adapters/deepseek-harness/dsh-gate.mjs; do
+            node --check "$f" && echo "ok  $f"
+          done
+
+      - name: Skill's standalone copies match the canonical gate
+        run: |
+          cmp hooks/core/eval-gate.mjs      skills/evals-review-loop/templates/eval-gate.mjs
+          cmp hooks/core/stop-gate.sh       skills/evals-review-loop/templates/require-evals-pass.sh
+          cmp adapters/claude-code/settings.hooks.json skills/evals-review-loop/templates/settings.hooks.json
+          echo "ok  skill template copies are identical to the canonical implementations"
+
+      - name: Adapter configs parse
+        run: |
+          for f in hooks/hooks.json adapters/claude-code/settings.hooks.json; do
+            python3 -c "import json; json.load(open('$f')); print('ok  $f')"
+          done
+
+      - name: Manifests parse
+        run: |
+          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json; do
+            python3 -c "import json,sys; json.load(open('$f')); print('ok  $f')"
+          done
+
+  skill:
+    name: Agent Skill spec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Frontmatter present and within limits
+        run: |
+          python3 - <<'PY'
+          import re, pathlib, sys
+          p = pathlib.Path("skills/evals-review-loop/SKILL.md")
+          s = p.read_text(encoding="utf-8")
+          m = re.search(r"\A---\n(.*?)\n---\n", s, re.S)
+          if not m:
+              sys.exit("SKILL.md has no YAML frontmatter")
+          fm = m.group(1)
+          name = re.search(r"^name:\s*(\S+)\s*$", fm, re.M)
+          desc = re.search(r"^description:\s*(.+)$", fm, re.M)
+          if not name or not desc:
+              sys.exit("frontmatter needs name and description")
+          n, d = name.group(1), desc.group(1).strip()
+          assert re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", n), f"bad name: {n}"
+          assert n == p.parent.name, f"name '{n}' must match directory '{p.parent.name}'"
+          assert len(d) <= 1024, f"description too long: {len(d)}"
+          print(f"ok  name={n}  description={len(d)} chars")
+          PY
+
+      - name: Every internal link resolves
+        run: |
+          python3 - <<'PY'
+          import re, pathlib, sys
+          root = pathlib.Path("skills/evals-review-loop")
+          missing = []
+          for md in [root/"SKILL.md", *sorted((root/"references").glob("*.md"))]:
+              for target in re.findall(r"\]\(([^)]+)\)", md.read_text(encoding="utf-8")):
+                  if target.startswith("http") or target.startswith("#"):
+                      continue
+                  resolved = (md.parent / target).resolve()
+                  if not resolved.exists():
+                      missing.append(f"{md}: {target}")
+          if missing:
+              sys.exit("broken links:\n" + "\n".join(missing))
+          print("ok  all internal links resolve")
+          PY

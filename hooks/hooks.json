@@ -1,0 +1,32 @@
+{
+  "description": "Evals gate: blocks product-source writes until the feature's eval.md is approved, and refuses to let a turn end claiming a feature is done while an approved check is not PASS. Inert unless the project root contains .evals-loop, which a human creates.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/core/eval-gate.mjs\" check",
+            "statusMessage": "Checking evals gate…",
+            "timeout": 15,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/core/eval-gate.mjs\" stop",
+            "statusMessage": "Checking evals before finishing…",
+            "timeout": 1800,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ]
+  }
+}
