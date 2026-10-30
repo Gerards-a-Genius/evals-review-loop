@@ -24,7 +24,7 @@ jobs:
           node-version: "20"
 
       - name: Gate assertion suite
-        run: bash test/run-tests.sh
+        run: bash test/harness/run-tests.sh
 
       - name: Syntax — core gate
         run: node --check hooks/core/eval-gate.mjs
