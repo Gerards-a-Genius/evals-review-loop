@@ -7,8 +7,15 @@ on:
 
 jobs:
   gate:
-    name: Gate test suite
-    runs-on: ubuntu-latest
+    name: Gate test suite (${{ matrix.os }})
+    # macOS is not optional here: /bin/bash there is 3.2.57, where an empty array
+    # under `set -u` errors instead of expanding to nothing. The completion gate
+    # shipped that bug once; running on both OSes is what catches it.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
